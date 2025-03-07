@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: database-helm
+    namespace: database
+data:
+    helm-values.yaml: |
+      cluster:
+        instances: 1
+        roles:
+        - name: automatisch
+          ensure: present
+          comment: Automatisch user
+          login: true
+          superuser: false
+          inRoles:
+            - pg_monitor
+            - pg_signal_backend
+          passwordSecret:
+            name: postgres-automatisch-role
