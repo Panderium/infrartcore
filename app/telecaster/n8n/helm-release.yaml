@@ -1,18 +1,18 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: automatisch
+  name: n8n
   namespace: app
 spec:
   interval: 2m
   chart:
     spec:
-      chart: app/telecaster/automatisch/chart/
+      chart: charts/n8n
       sourceRef:
         kind: GitRepository
-        name: automatisch
+        name: n8n
         namespace: app
   valuesFrom:
     - kind: ConfigMap
-      name: automatisch-helm
+      name: n8n-helm
       valuesKey: helm-values.yaml

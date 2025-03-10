@@ -1,0 +1,15 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: n8n 
+  namespace: app
+spec:
+  interval: 1m
+  url: https://github.com/8gears/n8n-helm-chart
+  ref:
+    tag: 1.0.4
+  ignore: |
+    # exclude all
+    /*
+    # include chat directory
+    !/charts/n8n
