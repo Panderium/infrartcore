@@ -1,0 +1,15 @@
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: metallb
+  namespace: metallb-system
+spec:
+  interval: 1m
+  url: https://github.com/metallb/metallb
+  ref:
+    tag: v0.14.9
+  ignore: |
+    # exclude all
+    /*
+    # include chat directory
+    !/charts/metallb

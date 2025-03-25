@@ -7,9 +7,8 @@ spec:
   interval: 4h
   chart:
     spec:
-      chart: metallb
+      chart: charts/metallb
       sourceRef:
-        kind: HelmRepository
+        kind: GitRepository
         name: metallb
         namespace: metallb-system
-    
