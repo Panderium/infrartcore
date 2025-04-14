@@ -1,0 +1,109 @@
+variant: fcos
+version: 1.4.0
+passwd:
+  users:
+    - name: core
+      ssh_authorized_keys:
+        - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP0wuRy1Kpdfb/QYvoayJ8IU8+eTLmSyC4SDafFjRuD2 alexis@infrart
+storage:
+  files:
+    - path: /etc/hostname
+      contents:
+        inline: |
+          infrart-core
+    - path: /usr/local/bin/install-cilium.sh
+      mode: 0755
+      contents:
+        inline: |
+          #!/usr/bin/env bash
+          until [ -f /etc/rancher/k3s/k3s.yaml ]; do sleep 2; done
+          curl -sfL https://get.helm.sh/helm-v3.14.3-linux-amd64.tar.gz | tar xz -C /tmp
+          mv /tmp/linux-amd64/helm /usr/local/bin/helm
+          helm repo add cilium https://helm.cilium.io/
+          helm repo update
+          helm install cilium cilium/cilium \
+            --version 1.15.2 \
+            --namespace kube-system \
+            --set kubeProxyReplacement=strict \
+            --set k8sServiceHost=35.208.217.230 \
+            --set k8sServicePort=6443 \
+            --set ipam.mode=kubernetes
+    - path: /usr/local/bin/install-fluxcd.sh
+      mode: 0755
+      contents:
+        inline: |
+          #!/usr/bin/env bash
+          until [ -f /etc/rancher/k3s/k3s.yaml ]; do sleep 2; done;
+          curl -s https://fluxcd.io/install.sh | sudo bash;
+          flux install \
+            --namespace=flux-system \
+            --components="source-controller,kustomize-controller,helm-controller,notification-controller";
+          # Bootstrap Flux with the repository
+          flux bootstrap github \
+            --owner=Panderium \
+            --repository=infrartcore \
+            --branch=main \
+            --path=./clusters/telecaster \
+            --personal;
+systemd:
+  units:
+    - name: k3s-install.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Install K3s Kubernetes
+        After=network-online.target
+
+        [Service]
+        Type=oneshot
+        ExecStart=/usr/bin/bash -c 'curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--flannel-backend=none --disable-network-policy --disable servicelb --write-kubeconfig-mode 644" sh -'
+
+        [Install]
+        WantedBy=multi-user.target
+
+
+    - name: cilium-install.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Install Cilium CNI on K3s
+        After=k3s-install.service
+        Requires=k3s-install.service
+
+        [Service]
+        Type=oneshot
+        ExecStart=/usr/local/bin/install-cilium.sh
+
+        [Install]
+        WantedBy=multi-user.target
+
+    
+    - name: fluxcd-install.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Install FluxCD on K3s
+        After=cilium-install.service
+        Requires=cilium-install.service
+
+        [Service]
+        Type=oneshot
+        ExecStart=/usr/local/bin/install-fluxcd.sh
+
+        [Install]
+        WantedBy=multi-user.target
+
+
+    - name: sshd.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=OpenSSH server daemon
+        After=network.target
+
+        [Service]
+        ExecStart=/usr/sbin/sshd -D
+        Restart=always
+
+        [Install]
+        WantedBy=multi-user.target 
