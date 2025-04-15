@@ -3,6 +3,7 @@ version: 1.4.0
 passwd:
   users:
     - name: core
+      password_hash: $y$j9T$QC5egcwwV/rPp6utjQUED1$EJyjVEtszDOR6KqkbH2winwsjaNgvzXuTAsvLWIH1K
       ssh_authorized_keys:
         - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP0wuRy1Kpdfb/QYvoayJ8IU8+eTLmSyC4SDafFjRuD2 alexis@infrart
 storage:

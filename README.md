@@ -5,6 +5,9 @@
 # Generate ignition file from butane file
 butane config.bu --pretty --strict > config.ign
 
+# Create external statique IP
+gcloud compute addresses create infrart --region northamerica-northeast1
+
 # Launch a new VM on GCP
 gcloud compute instances create infrart-core \
     --image-family=fedora-coreos-stable \
@@ -18,10 +21,10 @@ gcloud compute instances create infrart-core \
     --boot-disk-type=pd-balanced
 
 
-# Open firewall port for http, https and k3s
-gcloud compute firewall-rules create allow-http-https \
-  --allow tcp:80,tcp:443 \
-  --target-tags=http-server,https-server \
+# Open firewall port for http, https and ssh
+gcloud compute firewall-rules create allow-http-https-ssh \
+  --allow tcp:80,tcp:443,tcp:22 \
+  --target-tags=infrart-core,k3s-master \
   --source-ranges=0.0.0.0/0 \
-  --description="Allow HTTP and HTTPS traffic"
+  --description="Allow HTTP, HTTPS and SSH traffic"
 ```
