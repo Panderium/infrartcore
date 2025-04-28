@@ -27,10 +27,10 @@ spec:
   sourceRef:
     kind: GitRepository
     name: flux-system
-  decryption:
-    provider: sops
-    secretRef:
-      name: sops-gpg
+  # decryption:
+  #   provider: sops
+  #   secretRef:
+  #     name: sops-gpg
   path: ./plateform/telecaster
   prune: true
   wait: true

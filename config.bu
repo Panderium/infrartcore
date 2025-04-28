@@ -3,7 +3,7 @@ version: 1.4.0
 passwd:
   users:
     - name: core
-      password_hash: $y$j9T$QC5egcwwV/rPp6utjQUED1$EJyjVEtszDOR6KqkbH2winwsjaNgvzXuTAsvLWIH1K
+      password_hash: $y$j9T$Huv5YfBfkU7G/1fkhZuRA1$hlqUIxbvsrd1E/nNQqY/.UuB0lR.QZ8viEe954Hi.I5
       ssh_authorized_keys:
         - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP0wuRy1Kpdfb/QYvoayJ8IU8+eTLmSyC4SDafFjRuD2 alexis@infrart
 storage:
@@ -12,6 +12,16 @@ storage:
       contents:
         inline: |
           infrart-core
+    - path: /usr/local/bin/post-install-k3s.sh
+      mode: 0755
+      contents:
+        inline: |
+          #!/usr/bin/env bash
+          until [ -f /etc/rancher/k3s/k3s.yaml ]; do sleep 2; done
+          mkdir -p /var/home/core/.kube
+          cp /etc/rancher/k3s/k3s.yaml /var/home/core/.kube/config
+          chown core:core /home/core/.kube/config
+          kubectl taint nodes --all node.kubernetes.io/not-ready:NoSchedule- || true
     - path: /usr/local/bin/install-cilium.sh
       mode: 0755
       contents:
@@ -26,7 +36,7 @@ storage:
             --version 1.15.2 \
             --namespace kube-system \
             --set kubeProxyReplacement=strict \
-            --set k8sServiceHost=35.208.217.230 \
+            --set k8sServiceHost=$(curl -H "Metadata-Flavor: Google" http://169.254.169.254/computeMetadata/v1/instance/network-interfaces/0/ip) \
             --set k8sServicePort=6443 \
             --set ipam.mode=kubernetes
     - path: /usr/local/bin/install-fluxcd.sh
@@ -54,10 +64,29 @@ systemd:
         [Unit]
         Description=Install K3s Kubernetes
         After=network-online.target
+        Wants=network-online.target
 
         [Service]
         Type=oneshot
-        ExecStart=/usr/bin/bash -c 'curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--flannel-backend=none --disable-network-policy --disable servicelb --write-kubeconfig-mode 644" sh -'
+        RemainAfterExit=true
+        ExecStartPre=/usr/bin/env sh -c 'until ping -c1 8.8.8.8; do sleep 1; done'
+        ExecStart=/usr/bin/bash -c 'curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="server --flannel-backend=none --disable-network-policy --disable servicelb --write-kubeconfig-mode 644" sh -'
+        ExecStartPost=systemctl start k3s
+
+        [Install]
+        WantedBy=multi-user.target
+
+    - name: post-k3s-setup.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Post-installation setup after K3s
+        After=k3s-install.service
+        Requires=k3s-install.service
+
+        [Service]
+        Type=oneshot
+        ExecStart=/usr/local/bin/post-install-k3s.sh
 
         [Install]
         WantedBy=multi-user.target
@@ -73,6 +102,7 @@ systemd:
 
         [Service]
         Type=oneshot
+        Environment=HOME=/var/home/core
         ExecStart=/usr/local/bin/install-cilium.sh
 
         [Install]
@@ -89,6 +119,8 @@ systemd:
 
         [Service]
         Type=oneshot
+        Environment=HOME=/var/home/core
+        Environment=GITHUB_TOKEN=${GITHUB_TOKEN}
         ExecStart=/usr/local/bin/install-fluxcd.sh
 
         [Install]
@@ -103,6 +135,7 @@ systemd:
         After=network.target
 
         [Service]
+        ExecStartPre=/usr/bin/ssh-keygen -A
         ExecStart=/usr/sbin/sshd -D
         Restart=always
 

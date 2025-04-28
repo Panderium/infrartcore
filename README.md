@@ -3,7 +3,7 @@
 ## Install and setup Fedora CoreOs VM on GCP
 ```bash
 # Generate ignition file from butane file
-butane config.bu --pretty --strict > config.ign
+envsubst < config.bu | butane --pretty --strict > config.ign
 
 # Create external statique IP
 gcloud compute addresses create infrart --region northamerica-northeast1

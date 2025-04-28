@@ -2,11 +2,11 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: app
 resources:
-  - helm-git-repository.yaml
-  - helm-release.yaml
-configMapGenerator:
-  - name: n8n-helm
-    files:
-      - helm-values.yaml=values.yaml
-configurations:
-  - kustomizeconfig.yaml
+#   - helm-git-repository.yaml
+#   - helm-release.yaml
+# configMapGenerator:
+#   - name: n8n-helm
+#     files:
+#       - helm-values.yaml=values.yaml
+# configurations:
+#   - kustomizeconfig.yaml
